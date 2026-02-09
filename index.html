@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Video Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center py-10">
+    <div class="w-full max-w-3xl bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
+        <h1 class="text-3xl font-extrabold text-center mb-8 text-blue-400">Video Downloader</h1>
+        
+        <div class="flex flex-col sm:flex-row gap-3 mb-10">
+            <input type="text" id="videoUrl" placeholder="Paste video link here..." 
+                class="flex-1 p-4 rounded-xl bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+            <button onclick="fetchDetails()" id="btn" 
+                class="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95">
+                Fetch Video
+            </button>
+        </div>
+
+        <div id="result" class="hidden animate-in fade-in duration-500">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <img id="thumb" class="w-full rounded-xl shadow-md border border-slate-600" src="" alt="Thumbnail">
+                    <video id="preview" controls class="w-full rounded-xl bg-black aspect-video"></video>
+                </div>
+
+                <div class="flex flex-col justify-center space-y-4">
+                    <h2 id="title" class="text-lg font-semibold leading-tight text-gray-200"></h2>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Select Format & Quality:</label>
+                        <select id="formatSelect" class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            </select>
+                    </div>
+
+                    <button onclick="downloadFile()" 
+                        class="w-full bg-green-500 hover:bg-green-600 text-slate-900 py-4 rounded-xl font-black text-lg transition-all shadow-lg active:scale-95">
+                        DOWNLOAD NOW
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchDetails() {
+            const url = document.getElementById('videoUrl').value;
+            const btn = document.getElementById('btn');
+            const resultDiv = document.getElementById('result');
+
+            if(!url) return alert("Please paste a URL first!");
+
+            btn.innerText = 'Searching...';
+            btn.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('url', url);
+
+                const res = await fetch('/fetch', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if(data.error) throw new Error(data.error);
+
+                resultDiv.classList.remove('hidden');
+                document.getElementById('title').innerText = data.title;
+                document.getElementById('thumb').src = data.thumbnail;
+                document.getElementById('preview').src = data.video_preview;
+
+                const select = document.getElementById('formatSelect');
+                select.innerHTML = '';
+                
+                data.formats.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.url;
+                    opt.innerText = `${f.type}: ${f.quality} (${f.ext})`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                alert("Error: Could not fetch video details. Check the link.");
+            } finally {
+                btn.innerText = 'Fetch Video';
+                btn.disabled = false;
+            }
+        }
+
+        function downloadFile() {
+            const downloadUrl = document.getElementById('formatSelect').value;
+            if(downloadUrl) {
+                window.open(downloadUrl, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
